@@ -1,0 +1,22 @@
+These tests were run on a MacBook Pro with macOS Sonoma version 14.7.6.
+CPU: Apple M3 Max
+RAM: 36 GB
+
+
+Benchmark                                                                       (fractionOfAvailableCores)  Mode  Cnt   Score   Error  Units
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.1  avgt   10  37.698 ± 0.725   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.2  avgt   10  21.232 ± 0.596   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.3  avgt   10  14.410 ± 0.456   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.4  avgt   10  13.505 ± 0.504   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.5  avgt   10  10.989 ± 1.177   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.6  avgt   10  11.279 ± 1.773   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.7  avgt   10  10.325 ± 1.381   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.8  avgt   10  10.044 ± 1.318   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.9  avgt   10  10.441 ± 1.187   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                          1.  avgt   10  10.157 ± 1.434   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                        1.33  avgt   10   9.975 ± 1.373   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                        1.66  avgt   10   9.964 ± 1.323   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                          2.  avgt   10  10.465 ± 1.422   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                        2.33  avgt   10  10.161 ± 1.524   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                        2.66  avgt   10   9.968 ± 1.011   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                          3.  avgt   10   9.901 ± 1.403   s/op

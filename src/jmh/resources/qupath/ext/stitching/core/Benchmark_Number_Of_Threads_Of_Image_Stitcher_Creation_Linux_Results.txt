@@ -1,0 +1,22 @@
+These tests were run on a GIGABYTE G5 KC with Fedora Linux 41 (Workstation Edition).
+CPU: Intel® Core™ i5-10500H × 12
+RAM: 16.0 GB
+
+
+Benchmark                                                                       (fractionOfAvailableCores)  Mode  Cnt   Score   Error  Units
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.1  avgt   10  57.818 ± 0.955   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.2  avgt   10  31.961 ± 0.940   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.3  avgt   10  24.987 ± 2.546   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.4  avgt   10  20.553 ± 0.634   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.5  avgt   10  17.279 ± 2.057   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.6  avgt   10  16.536 ± 1.592   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.7  avgt   10  15.152 ± 2.576   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.8  avgt   10  14.558 ± 2.585   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.9  avgt   10  14.482 ± 3.104   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                          1.  avgt   10  13.886 ± 2.394   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                        1.33  avgt   10  14.438 ± 1.283   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                        1.66  avgt   10  13.559 ± 1.505   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                          2.  avgt   10  13.917 ± 2.424   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                        2.33  avgt   10  13.312 ± 1.727   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                        2.66  avgt   10  13.401 ± 1.828   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                          3.  avgt   10  13.977 ± 1.676   s/op

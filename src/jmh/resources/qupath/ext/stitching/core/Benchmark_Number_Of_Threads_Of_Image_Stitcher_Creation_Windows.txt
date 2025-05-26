@@ -1,0 +1,22 @@
+These tests were run on a HP EliteDesk 800 G5 TWR with Windows 11 Education 23H2.
+CPU: Intel® Core™ i7-9700
+RAM: 32.0 GB
+
+
+Benchmark                                                                       (fractionOfAvailableCores)  Mode  Cnt   Score   Error  Units
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.1  avgt    8  75.959 ± 4.134   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.2  avgt    8  77.748 ± 5.836   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.3  avgt    8  41.411 ± 2.065   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.4  avgt    8  32.758 ± 1.248   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.5  avgt    8  25.662 ± 1.779   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.6  avgt    8  25.145 ± 2.582   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.7  avgt    8  23.149 ± 0.803   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.8  avgt    8  20.915 ± 1.765   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                         0.9  avgt    8  21.519 ± 1.109   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                          1.  avgt    8  18.210 ± 5.026   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                        1.33  avgt    8  16.857 ± 4.217   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                        1.66  avgt    8  15.519 ± 3.703   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                          2.  avgt    8  16.067 ± 2.881   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                        2.33  avgt    8  15.819 ± 2.886   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                        2.66  avgt    8  14.816 ± 3.191   s/op
+BenchmarkImageStitching.Benchmark_Number_Of_Threads_Of_Image_Stitcher_Creation                          3.  avgt    8  14.098 ± 2.424   s/op

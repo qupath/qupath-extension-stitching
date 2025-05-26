@@ -164,9 +164,9 @@ public class ImageStitcher {
     public static class Builder {
 
         private final List<String> imagePaths;
-        private int numberOfThreads = Runtime.getRuntime().availableProcessors();   // this was determined by running the BenchmarkImageStitching
-                                                                                    // benchmark on several machines and taking the best score (see the
-                                                                                    // src/jmh/resources folder)
+        private int numberOfThreads = 3 * Runtime.getRuntime().availableProcessors();   // this was determined by running the BenchmarkImageStitching
+                                                                                        // benchmark on several machines and taking the best score (see the
+                                                                                        // src/jmh/resources folder)
         private boolean pyramidalize = true;
         private Consumer<Float> onProgress = null;
 
@@ -182,7 +182,7 @@ public class ImageStitcher {
         /**
          * Set the number of threads to use when parsing the input images or writing the output image
          *
-         * @param numberOfThreads the number of threads to use. By default, this is equal to {@link Runtime#availableProcessors()}
+         * @param numberOfThreads the number of threads to use. By default, this is equal to 3 * {@link Runtime#availableProcessors()}
          * @return this builder
          */
         public Builder setNumberOfThreads(int numberOfThreads) {

@@ -2,6 +2,7 @@ package qupath.ext.stitching.core;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import qupath.ext.stitching.Utils;
 import qupath.lib.regions.RegionRequest;
 
 import javax.imageio.ImageIO;
@@ -11,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class TestImageStitcher {
@@ -27,14 +29,16 @@ public class TestImageStitcher {
 
     @Test
     void Check_No_Tiff_Image_Given() throws IOException {
-        Path tempFilePath = Files.createTempFile(null, ".tiff");
-        Files.writeString(tempFilePath, "some content");
-        List<String> imagePaths = List.of(tempFilePath.toString());
+        Path imagePath = Files.createTempFile(null, ".tiff");
+        Files.writeString(imagePath, "some content");
+        List<String> imagePaths = List.of(imagePath.toString());
 
         Assertions.assertThrows(
                 IllegalArgumentException.class,
                 () -> new ImageStitcher.Builder(imagePaths).build()
         );
+
+        Files.delete(imagePath);
     }
 
     @Test
@@ -47,6 +51,8 @@ public class TestImageStitcher {
                 IllegalArgumentException.class,
                 () -> new ImageStitcher.Builder(imagePaths).build()
         );
+
+        Files.delete(Path.of(imagePath));
     }
 
     @Test
@@ -61,6 +67,9 @@ public class TestImageStitcher {
         ImageStitcher imageStitcher = new ImageStitcher.Builder(imagePaths).build();
 
         Assertions.assertEquals(expectedWidth, imageStitcher.getServer().getWidth());
+
+        Files.delete(Path.of(imagePath1));
+        Files.delete(Path.of(imagePath2));
     }
 
     @Test
@@ -75,6 +84,9 @@ public class TestImageStitcher {
         ImageStitcher imageStitcher = new ImageStitcher.Builder(imagePaths).build();
 
         Assertions.assertEquals(expectedHeight, imageStitcher.getServer().getHeight());
+
+        Files.delete(Path.of(imagePath1));
+        Files.delete(Path.of(imagePath2));
     }
 
     @Test
@@ -98,6 +110,9 @@ public class TestImageStitcher {
                 expectedImage,
                 imageStitcher.getServer().readRegion(RegionRequest.createInstance(imageStitcher.getServer()))
         );
+
+        Files.delete(Path.of(imagePath1));
+        Files.delete(Path.of(imagePath2));
     }
 
     @Test
@@ -110,6 +125,10 @@ public class TestImageStitcher {
         String outputPath = Files.createTempDirectory(null).resolve("invalid.path").toString();
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> new ImageStitcher.Builder(imagePaths).build().writeToZarrFile(outputPath, null));
+
+        Files.delete(Path.of(imagePath1));
+        Files.delete(Path.of(imagePath2));
+        Utils.deleteDirectoryRecursively(Paths.get(outputPath).getParent().toFile());
     }
 
     @Test
@@ -122,6 +141,10 @@ public class TestImageStitcher {
         String outputPath = Files.createTempFile(null,"ome.zarr").toString();
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> new ImageStitcher.Builder(imagePaths).build().writeToZarrFile(outputPath, null));
+
+        Files.delete(Path.of(imagePath1));
+        Files.delete(Path.of(imagePath2));
+        Files.delete(Path.of(outputPath));
     }
 
     @Test
@@ -131,10 +154,14 @@ public class TestImageStitcher {
         String imagePath2 = Files.createTempFile(null, ".tiff").toString();
         ImageUtils.writeTiff(imagePath2, ImageUtils.createSampleImage(2, 3, Color.WHITE), 1, 1, 2, 4);
         List<String> imagePaths = List.of(imagePath1, imagePath2);
-        String outputPath = Files.createTempDirectory(null).resolve("image.ome.zarr").toString();
+        Path outputPath = Path.of(Files.createTempDirectory(null).resolve("image.ome.zarr").toString());
 
-        new ImageStitcher.Builder(imagePaths).build().writeToZarrFile(outputPath, null);
+        new ImageStitcher.Builder(imagePaths).build().writeToZarrFile(outputPath.toString(), null);
 
-        Assertions.assertTrue(Files.exists(Path.of(outputPath)));
+        Assertions.assertTrue(Files.exists(outputPath));
+
+        Files.delete(Path.of(imagePath1));
+        Files.delete(Path.of(imagePath2));
+        Utils.deleteDirectoryRecursively(outputPath.getParent().toFile());
     }
 }

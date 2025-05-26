@@ -10,7 +10,7 @@ import java.nio.file.Path;
 public class TestUtils {
 
     @Test
-    void Check_File_Deleted() throws IOException {
+    void Check_File_Deleted_Or_Moved_To_Trash() throws IOException {
         Path file = Files.createTempFile(null, null);
 
         Utils.moveDirectoryToTrashOrDeleteRecursively(file.toFile());
@@ -19,10 +19,38 @@ public class TestUtils {
     }
 
     @Test
-    void Check_Empty_Directory_Deleted() throws IOException {
+    void Check_Empty_Directory_Deleted_Or_Moved_To_Trash() throws IOException {
         Path directory = Files.createTempDirectory(null);
 
         Utils.moveDirectoryToTrashOrDeleteRecursively(directory.toFile());
+
+        Assertions.assertFalse(Files.exists(directory));
+    }
+
+    @Test
+    void Check_Non_Empty_Directory_Deleted_Or_Moved_To_Trash() throws IOException {
+        Path directory = Files.createTempDirectory(null);
+        Files.createFile(directory.resolve("file"));
+
+        Utils.moveDirectoryToTrashOrDeleteRecursively(directory.toFile());
+
+        Assertions.assertFalse(Files.exists(directory));
+    }
+
+    @Test
+    void Check_File_Deleted() throws IOException {
+        Path file = Files.createTempFile(null, null);
+
+        Utils.deleteDirectoryRecursively(file.toFile());
+
+        Assertions.assertFalse(Files.exists(file));
+    }
+
+    @Test
+    void Check_Empty_Directory_Deleted() throws IOException {
+        Path directory = Files.createTempDirectory(null);
+
+        Utils.deleteDirectoryRecursively(directory.toFile());
 
         Assertions.assertFalse(Files.exists(directory));
     }
@@ -32,7 +60,7 @@ public class TestUtils {
         Path directory = Files.createTempDirectory(null);
         Files.createFile(directory.resolve("file"));
 
-        Utils.moveDirectoryToTrashOrDeleteRecursively(directory.toFile());
+        Utils.deleteDirectoryRecursively(directory.toFile());
 
         Assertions.assertFalse(Files.exists(directory));
     }

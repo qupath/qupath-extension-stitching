@@ -38,7 +38,7 @@ public class Utils {
      * @throws IOException if an I/O error occurs
      * @throws SecurityException if the user doesn't have sufficient rights to move or
      * delete some files
-     * @throws NullPointerException if the provided directory is null
+     * @throws NullPointerException if the provided file or directory is null
      */
     public static void moveDirectoryToTrashOrDeleteRecursively(File directoryToDelete) throws IOException {
         if (!directoryToDelete.exists()) {
@@ -56,7 +56,17 @@ public class Utils {
         }
     }
 
-    private static void deleteDirectoryRecursively(File directoryToBeDeleted) throws IOException {
+    /**
+     * Delete the file and all its children recursively if it's a directory.
+     * This won't do anything if the provided file doesn't exist.
+     *
+     * @param directoryToBeDeleted the file or directory to delete
+     * @throws IOException if an I/O error occurs
+     * @throws SecurityException if the user doesn't have sufficient rights to delete
+     * some files
+     * @throws NullPointerException if the provided file or directory is null
+     */
+    public static void deleteDirectoryRecursively(File directoryToBeDeleted) throws IOException {
         logger.debug("Deleting children of {}", directoryToBeDeleted);
         File[] childFiles = directoryToBeDeleted.listFiles();
         if (childFiles != null) {

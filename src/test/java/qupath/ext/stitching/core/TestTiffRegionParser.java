@@ -2,6 +2,7 @@ package qupath.ext.stitching.core;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import qupath.ext.stitching.Utils;
 import qupath.lib.regions.ImageRegion;
 
 import javax.imageio.ImageIO;
@@ -25,6 +26,8 @@ public class TestTiffRegionParser {
         String path = Files.createTempDirectory(null).resolve("no_file").toString();
 
         Assertions.assertThrows(IOException.class, () -> TiffRegionParser.parseRegion(path, 1, 1));
+
+        Utils.deleteDirectoryRecursively(Path.of(path).getParent().toFile());
     }
 
     @Test
@@ -32,6 +35,8 @@ public class TestTiffRegionParser {
         String path = Files.createTempFile(null, ".tiff").toString();
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> TiffRegionParser.parseRegion(path, 1, 1));
+
+        Files.delete(Path.of(path));
     }
 
     @Test
@@ -41,6 +46,8 @@ public class TestTiffRegionParser {
         String path = tempFilePath.toString();
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> TiffRegionParser.parseRegion(path, 1, 1));
+
+        Files.delete(tempFilePath);
     }
 
     @Test
@@ -49,6 +56,8 @@ public class TestTiffRegionParser {
         ImageIO.write(ImageUtils.createSampleImage(2, 3, Color.WHITE), "tiff", new File(path));
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> TiffRegionParser.parseRegion(path, 1, 1));
+
+        Files.delete(Path.of(path));
     }
 
     @Test
@@ -60,5 +69,7 @@ public class TestTiffRegionParser {
         List<ImageRegion> regions = TiffRegionParser.parseRegion(path, 1, 1);
 
         ImageUtils.assertCollectionsEqualsWithoutOrder(expectedRegions, regions);
+
+        Files.delete(Path.of(path));
     }
 }

@@ -165,7 +165,8 @@ public class ImageStitcher {
 
         private final List<String> imagePaths;
         private int numberOfThreads = Runtime.getRuntime().availableProcessors();   // this was determined by running the BenchmarkImageStitching
-                                                                                    // benchmark on Linux and macOS laptops and taking the best score
+                                                                                    // benchmark on several machines and taking the best score (see the
+                                                                                    // src/jmh/resources folder)
         private boolean pyramidalize = true;
         private Consumer<Float> onProgress = null;
 

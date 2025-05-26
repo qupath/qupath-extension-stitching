@@ -68,7 +68,10 @@ public class BenchmarkImageStitching {
         String outputPath = Files.createTempDirectory(imagesDirectory, null).resolve("image.ome.zarr").toString();
 
         new ImageStitcher.Builder(imagePaths)
-                .setNumberOfThreads((int) (Runtime.getRuntime().availableProcessors() * fractionOfAvailableCores))
+                .setNumberOfThreads(Math.max(
+                        (int) (Runtime.getRuntime().availableProcessors() * fractionOfAvailableCores),
+                        1
+                ))
                 .build()
                 .writeToZarrFile(outputPath, null);
     }

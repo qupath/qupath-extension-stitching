@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import qupath.lib.common.ThreadTools;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.images.servers.ImageServerBuilder;
-import qupath.lib.images.servers.ImageServerMetadata;
 import qupath.lib.images.servers.ImageServerProvider;
 import qupath.lib.images.servers.ImageServers;
 import qupath.lib.images.servers.SparseImageServer;
@@ -60,19 +59,22 @@ public class ImageStitcher {
                     ImageServerBuilder.ServerBuilder<BufferedImage> serverBuilder = imageSupport.getBuilders().getFirst();
                     logger.debug("Got server builder {} for {}", serverBuilder, imagePath);
 
+                    ImageServer<BufferedImage> server = serverBuilder.build();
+                    logger.debug("Got server {} for {}", server, imagePath);
+
                     List<ImageRegion> regions = TiffRegionParser.parseRegion(
                             imagePath,
-                            serverBuilder.getMetadata().map(ImageServerMetadata::getSizeZ).orElse(1),
-                            serverBuilder.getMetadata().map(ImageServerMetadata::getSizeT).orElse(1)
+                            server.getMetadata().getSizeZ(),
+                            server.getMetadata().getSizeT()
                     );
                     logger.debug("Got regions {} for {}", regions, imagePath);
 
                     synchronized (this) {
                         for (ImageRegion region: regions) {
-                            sparserServerBuilder.jsonRegion(
+                            sparserServerBuilder.serverRegion(
                                     region,
                                     1.0,
-                                    serverBuilder
+                                    server
                             );
                         }
                     }
@@ -180,7 +182,7 @@ public class ImageStitcher {
         }
 
         /**
-         * Set the number of threads to use when parsing the input images or writing the output image
+         * Set the number of threads to use when parsing the input images or writing the output image.
          *
          * @param numberOfThreads the number of threads to use. By default, this is equal to {@link Runtime#availableProcessors()}
          * @return this builder

@@ -14,11 +14,14 @@ import qupath.lib.regions.ImageRegion;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
@@ -134,19 +137,25 @@ public class ImageStitcher {
      */
     public void writeToZarrFile(String outputPath, Consumer<Float> onProgress) throws IOException, InterruptedException {
         logger.debug("Attempting to write {} to {}", server, outputPath);
-        AtomicInteger numberOfTiles = new AtomicInteger(0);
-        AtomicInteger numberOfTilesWritten = new AtomicInteger(0);
-
+        AtomicReference<Float> progress = new AtomicReference<>(0f);
+        Map<Integer, Float> levelProgress = new ConcurrentHashMap<>();      // Lower resolution tiles take more time to read, so we assume that a
+                                                                            // processed lower resolution tile provides more progress than a processed
+                                                                            // higher resolution tile
         try (var writer = new OMEZarrWriter.Builder(server)
                 .parallelize(numberOfThreads)
                 .onTileWritten(onProgress == null ?
                         null :
-                        tileRequest -> onProgress.accept((float) numberOfTilesWritten.incrementAndGet() / numberOfTiles.get())
+                        tileRequest -> onProgress.accept(progress.updateAndGet(p -> p + levelProgress.get(tileRequest.getLevel())))
                 )
                 .build(outputPath)
         ) {
-            numberOfTiles.set(writer.getReaderServer().getTileRequestManager().getAllTileRequests().size());
-            logger.debug("{} tiles to write to {}", numberOfTiles.get(), outputPath);
+            for (int level=0; level<writer.getReaderServer().getMetadata().nLevels(); level++) {
+                levelProgress.put(
+                        level,
+                        1f / (writer.getReaderServer().getMetadata().nLevels() * writer.getReaderServer().getTileRequestManager().getTileRequestsForLevel(level).size())
+                );
+            }
+            logger.debug("{} tiles to write to {}", writer.getReaderServer().getTileRequestManager().getAllTileRequests().size(), outputPath);
 
             writer.writeImage();
         }

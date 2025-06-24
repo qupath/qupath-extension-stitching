@@ -8,7 +8,7 @@ plugins {
 qupathExtension {
     name = "qupath-extension-stitching"
     group = "io.github.qupath"
-    version = "0.1.0-SNAPSHOT"
+    version = "0.1.0"
     description = "An extension to combine multiple TIFF images into a single image"
     automaticModule = "io.github.qupath.extension.stitching"
 }

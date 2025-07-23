@@ -164,7 +164,7 @@ class StitchingAction implements Runnable {
             } catch (Exception e) {
                 Platform.runLater(progressWindow::close);
 
-                if (e instanceof InterruptedException) {
+                if (e instanceof InterruptedException || (e.getCause() != null && e.getCause() instanceof InterruptedException)) {
                     logger.debug("Stitching {} to {} interrupted", inputImages, outputImage, e);
                 } else {
                     logger.error("Error when stitching {} to {}", inputImages, outputImage, e);

@@ -18,8 +18,8 @@ public class StitchingExtension implements QuPathExtension {
 
     private static final Logger logger = LoggerFactory.getLogger(StitchingExtension.class);
     private static final ResourceBundle resources = Utils.getResources();
-    private static final String EXTENSION_NAME = resources.getString("extension.name");
-    private static final String EXTENSION_DESCRIPTION = resources.getString("extension.description");
+    private static final String EXTENSION_NAME = resources.getString("Extension.name");
+    private static final String EXTENSION_DESCRIPTION = resources.getString("Extension.description");
     private static final Version EXTENSION_QUPATH_VERSION = Version.parse("v0.6.0");
     private boolean isInstalled = false;
 

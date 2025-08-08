@@ -8,6 +8,7 @@ import qupath.lib.images.servers.ImageServerBuilder;
 import qupath.lib.images.servers.ImageServerProvider;
 import qupath.lib.images.servers.ImageServers;
 import qupath.lib.images.servers.SparseImageServer;
+import qupath.lib.images.writers.ome.OMEPyramidWriter;
 import qupath.lib.images.writers.ome.zarr.OMEZarrWriter;
 import qupath.lib.regions.ImageRegion;
 
@@ -159,6 +160,23 @@ public class ImageStitcher {
 
             writer.writeImage();
         }
+    }
+
+    /**
+     * Write the resulting image to the specified path with the OME-TIFF format. This may take some time depending on
+     * the number of input images.
+     *
+     * @param outputPath the path the output image should have
+     * @throws RuntimeException if an error occurs while writing the image
+     */
+    public void writeToTiffFile(String outputPath) throws Exception {
+        new OMEPyramidWriter.Builder(server)
+                .tileSize(512)
+                .channelsInterleaved()          // because SparseImageServer returns all channels in a BufferedImage, it's more efficient to write them interleaved
+                .parallelize(numberOfThreads)
+                .losslessCompression()
+                .build()
+                .writeSeries(outputPath);
     }
 
     /**

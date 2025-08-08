@@ -13,7 +13,7 @@ public class TestUtils {
     void Check_File_Deleted_Or_Moved_To_Trash() throws IOException {
         Path file = Files.createTempFile(null, null);
 
-        Utils.moveDirectoryToTrashOrDeleteRecursively(file.toFile());
+        Utils.moveFileOrDirectoryToTrashOrDeleteRecursively(file.toFile());
 
         Assertions.assertFalse(Files.exists(file));
     }
@@ -22,7 +22,7 @@ public class TestUtils {
     void Check_Empty_Directory_Deleted_Or_Moved_To_Trash() throws IOException {
         Path directory = Files.createTempDirectory(null);
 
-        Utils.moveDirectoryToTrashOrDeleteRecursively(directory.toFile());
+        Utils.moveFileOrDirectoryToTrashOrDeleteRecursively(directory.toFile());
 
         Assertions.assertFalse(Files.exists(directory));
     }
@@ -32,7 +32,7 @@ public class TestUtils {
         Path directory = Files.createTempDirectory(null);
         Files.createFile(directory.resolve("file"));
 
-        Utils.moveDirectoryToTrashOrDeleteRecursively(directory.toFile());
+        Utils.moveFileOrDirectoryToTrashOrDeleteRecursively(directory.toFile());
 
         Assertions.assertFalse(Files.exists(directory));
     }
@@ -41,7 +41,7 @@ public class TestUtils {
     void Check_File_Deleted() throws IOException {
         Path file = Files.createTempFile(null, null);
 
-        Utils.deleteDirectoryRecursively(file.toFile());
+        Utils.deleteFileOrDirectoryRecursively(file.toFile());
 
         Assertions.assertFalse(Files.exists(file));
     }
@@ -50,7 +50,7 @@ public class TestUtils {
     void Check_Empty_Directory_Deleted() throws IOException {
         Path directory = Files.createTempDirectory(null);
 
-        Utils.deleteDirectoryRecursively(directory.toFile());
+        Utils.deleteFileOrDirectoryRecursively(directory.toFile());
 
         Assertions.assertFalse(Files.exists(directory));
     }
@@ -60,7 +60,7 @@ public class TestUtils {
         Path directory = Files.createTempDirectory(null);
         Files.createFile(directory.resolve("file"));
 
-        Utils.deleteDirectoryRecursively(directory.toFile());
+        Utils.deleteFileOrDirectoryRecursively(directory.toFile());
 
         Assertions.assertFalse(Files.exists(directory));
     }

@@ -27,7 +27,7 @@ public class TestTiffRegionParser {
 
         Assertions.assertThrows(IOException.class, () -> TiffRegionParser.parseRegion(path, 1, 1));
 
-        Utils.deleteDirectoryRecursively(Path.of(path).getParent().toFile());
+        Utils.deleteFileOrDirectoryRecursively(Path.of(path).getParent().toFile());
     }
 
     @Test

@@ -78,6 +78,6 @@ public class BenchmarkImageStitching {
 
     @TearDown(Level.Trial)
     public void Delete_Images() throws IOException {
-        Utils.deleteDirectoryRecursively(imagesDirectory.toFile());
+        Utils.deleteFileOrDirectoryRecursively(imagesDirectory.toFile());
     }
 }

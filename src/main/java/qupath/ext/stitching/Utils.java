@@ -2,8 +2,8 @@ package qupath.ext.stitching;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qupath.lib.common.GeneralTools;
 
-import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,25 +34,18 @@ public class Utils {
      * files to trash.
      * This won't do anything if the provided file doesn't exist.
      *
-     * @param directoryToDelete the file or directory to delete
+     * @param fileOrDirectoryToDelete the file or directory to delete
      * @throws IOException if an I/O error occurs
-     * @throws SecurityException if the user doesn't have sufficient rights to move or
-     * delete some files
      * @throws NullPointerException if the provided file or directory is null
      */
-    public static void moveDirectoryToTrashOrDeleteRecursively(File directoryToDelete) throws IOException {
-        if (!directoryToDelete.exists()) {
-            logger.debug("Can't delete {}: the path does not exist", directoryToDelete);
+    public static void moveFileOrDirectoryToTrashOrDeleteRecursively(File fileOrDirectoryToDelete) throws IOException {
+        if (!fileOrDirectoryToDelete.exists()) {
+            logger.debug("Can't delete {}: the path does not exist", fileOrDirectoryToDelete);
             return;
         }
 
-        Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
-        if (desktop != null && desktop.isSupported(Desktop.Action.MOVE_TO_TRASH)) {
-            logger.debug("Moving {} to trash", directoryToDelete);
-            desktop.moveToTrash(directoryToDelete);
-        } else {
-            logger.debug("Moving to trash not supported. Deleting {}", directoryToDelete);
-            deleteDirectoryRecursively(directoryToDelete);
+        if (!GeneralTools.moveToTrash(fileOrDirectoryToDelete)) {
+            deleteFileOrDirectoryRecursively(fileOrDirectoryToDelete);
         }
     }
 
@@ -66,12 +59,12 @@ public class Utils {
      * some files
      * @throws NullPointerException if the provided file or directory is null
      */
-    public static void deleteDirectoryRecursively(File directoryToBeDeleted) throws IOException {
+    public static void deleteFileOrDirectoryRecursively(File directoryToBeDeleted) throws IOException {
         logger.debug("Deleting children of {}", directoryToBeDeleted);
         File[] childFiles = directoryToBeDeleted.listFiles();
         if (childFiles != null) {
             for (File file : childFiles) {
-                deleteDirectoryRecursively(file);
+                deleteFileOrDirectoryRecursively(file);
             }
         }
 

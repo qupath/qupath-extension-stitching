@@ -29,6 +29,21 @@ class StitchingAction implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(StitchingAction.class);
     private static final ResourceBundle resources = Utils.getResources();
     private final QuPathGUI quPath;
+    private enum ImageFormat {
+        OME_ZARR("OME-Zarr"),
+        OME_TIFF("OME-TIFF");
+
+        private final String name;
+
+        ImageFormat(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
 
     /**
      * Create the action.
@@ -58,10 +73,15 @@ class StitchingAction implements Runnable {
         }
         logger.debug("Got files {} to stitch", inputFiles);
 
+        ImageFormat imageFormat = (ImageFormat) parameters.getChoiceParameterValue("imageFormat");
+
         File outputFile = FileChoosers.promptToSaveFile(
                 resources.getString("StitchingAction.chooseOutputPath"),
                 new File(""),
-                FileChoosers.createExtensionFilter("OME-Zarr", ".ome.zarr")
+                switch (imageFormat) {
+                    case OME_ZARR -> FileChoosers.createExtensionFilter("OME-Zarr", ".ome.zarr");
+                    case OME_TIFF -> FileChoosers.createExtensionFilter("OME-TIFF", ".ome.tiff");
+                }
         );
         if (outputFile == null) {
             return;
@@ -79,8 +99,8 @@ class StitchingAction implements Runnable {
             }
             try {
                 logger.debug("Deletion of {} accepted. Moving it to trash (or deleting it if moving to trash not supported)", outputFile);
-                Utils.moveDirectoryToTrashOrDeleteRecursively(outputFile);
-            } catch (IOException | SecurityException e) {
+                Utils.moveFileOrDirectoryToTrashOrDeleteRecursively(outputFile);
+            } catch (IOException e) {
                 logger.error("Cannot delete {} file", outputFile, e);
 
                 Dialogs.showErrorMessage(
@@ -90,7 +110,7 @@ class StitchingAction implements Runnable {
             }
         }
 
-        stitchImages(inputFiles.stream().map(File::getPath).toList(), outputFile.getPath(), parameters);
+        stitchImages(inputFiles.stream().map(File::getPath).toList(), outputFile.getPath(), parameters, imageFormat);
     }
 
     /**
@@ -116,10 +136,17 @@ class StitchingAction implements Runnable {
                         resources.getString("StitchingAction.pyramidalize"),
                         true,
                         resources.getString("StitchingAction.pyramidalizeDescription")
+                )
+                .addChoiceParameter(
+                        "imageFormat",
+                        resources.getString("StitchingAction.imageFormat"),
+                        ImageFormat.OME_ZARR,
+                        List.of(ImageFormat.values()),
+                        resources.getString("StitchingAction.imageFormatDescription")
                 );
     }
 
-    private void stitchImages(List<String> inputImages, String outputImage, ParameterList parameters) {
+    private void stitchImages(List<String> inputImages, String outputImage, ParameterList parameters, ImageFormat imageFormat) {
         ExecutorService executor = Executors.newSingleThreadExecutor(ThreadTools.createThreadFactory("stitching-action-", false));
         ProgressWindow progressWindow;
         try {
@@ -141,14 +168,27 @@ class StitchingAction implements Runnable {
                 ImageStitcher imageStitcher = new ImageStitcher.Builder(inputImages)
                         .setNumberOfThreads(parameters.getIntParameterValue("numberOfThreads"))
                         .pyramidalize(parameters.getBooleanParameterValue("pyramidalize"))
-                        .setOnProgress(progress -> Platform.runLater(() -> progressWindow.setProgress(progress / 2)))
+                        .setOnProgress(progress -> Platform.runLater(() -> progressWindow.setProgress(switch (imageFormat) {
+                            case OME_ZARR -> progress / 2;
+                            case OME_TIFF -> progress;
+                        })))
                         .build();
 
-                Platform.runLater(() -> progressWindow.setStatus(resources.getString("StitchingAction.writingOutputImage")));
-                imageStitcher.writeToZarrFile(
-                        outputImage,
-                        progress -> Platform.runLater(() -> progressWindow.setProgress(0.5f + progress/2))
-                );
+                switch (imageFormat) {
+                    case OME_ZARR -> {
+                        Platform.runLater(() -> progressWindow.setStatus(resources.getString("StitchingAction.writingOutputZarrImage")));
+                        imageStitcher.writeToZarrFile(
+                                outputImage,
+                                progress -> Platform.runLater(() -> progressWindow.setProgress(0.5f + progress/2)));
+                    }
+                    case OME_TIFF -> {
+                        Platform.runLater(() -> {
+                            progressWindow.setStatus(resources.getString("StitchingAction.writingOutputTiffImage"));
+                            progressWindow.setUndefinedProgress();
+                        });
+                        imageStitcher.writeToTiffFile(outputImage);
+                    }
+                }
 
                 Platform.runLater(() -> {
                     progressWindow.close();

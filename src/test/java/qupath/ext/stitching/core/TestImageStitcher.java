@@ -128,7 +128,7 @@ public class TestImageStitcher {
 
         Files.delete(Path.of(imagePath1));
         Files.delete(Path.of(imagePath2));
-        Utils.deleteDirectoryRecursively(Paths.get(outputPath).getParent().toFile());
+        Utils.deleteFileOrDirectoryRecursively(Paths.get(outputPath).getParent().toFile());
     }
 
     @Test
@@ -162,6 +162,24 @@ public class TestImageStitcher {
 
         Files.delete(Path.of(imagePath1));
         Files.delete(Path.of(imagePath2));
-        Utils.deleteDirectoryRecursively(outputPath.getParent().toFile());
+        Utils.deleteFileOrDirectoryRecursively(outputPath.getParent().toFile());
+    }
+
+    @Test
+    void Check_Tiff_File_Written() throws Exception {
+        String imagePath1 = Files.createTempFile(null, ".tiff").toString();
+        ImageUtils.writeTiff(imagePath1, ImageUtils.createSampleImage(2, 3, Color.WHITE), 1, 1, 0, 0);
+        String imagePath2 = Files.createTempFile(null, ".tiff").toString();
+        ImageUtils.writeTiff(imagePath2, ImageUtils.createSampleImage(2, 3, Color.WHITE), 1, 1, 2, 4);
+        List<String> imagePaths = List.of(imagePath1, imagePath2);
+        Path outputPath = Path.of(Files.createTempDirectory(null).resolve("image.ome.tiff").toString());
+
+        new ImageStitcher.Builder(imagePaths).build().writeToTiffFile(outputPath.toString());
+
+        Assertions.assertTrue(Files.exists(outputPath));
+
+        Files.delete(Path.of(imagePath1));
+        Files.delete(Path.of(imagePath2));
+        Utils.deleteFileOrDirectoryRecursively(outputPath.getParent().toFile());
     }
 }

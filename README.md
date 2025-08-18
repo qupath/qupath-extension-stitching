@@ -2,7 +2,7 @@
 
 Welcome to the stitching extension for [QuPath](http://qupath.github.io)!
 
-This extension adds support for combining TIFF images based on their "XResolution", "XPosition", "YResolution", "YPosition", "ImageWidth", and "ImageLength" tags.
+This extension adds support for combining TIFF images based on their names and "XResolution", "XPosition", "YResolution", "YPosition", "ImageWidth", and "ImageLength" tags.
 
 The extension is intended for QuPath v0.6 and later.
 It is not compatible with earlier QuPath versions.

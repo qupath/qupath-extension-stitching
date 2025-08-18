@@ -7,6 +7,7 @@ import qupath.lib.images.servers.ImageServer;
 import qupath.lib.images.servers.ImageServerBuilder;
 import qupath.lib.images.servers.ImageServerProvider;
 import qupath.lib.images.servers.ImageServers;
+import qupath.lib.images.servers.PixelCalibration;
 import qupath.lib.images.servers.SparseImageServer;
 import qupath.lib.images.writers.ome.OMEPyramidWriter;
 import qupath.lib.images.writers.ome.zarr.OMEZarrWriter;
@@ -26,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
- * A class to stitch TIFF images based on tags described in {@link TiffRegionParser#parseRegion(String,int,int)}.
+ * A class to stitch TIFF images based on tags described in {@link TiffRegionParser#parseRegion(String, ImageSource, int, int, PixelCalibration)}.
  * <p>
  * Use a {@link Builder} to create an instance of this class.
  */
@@ -36,6 +37,30 @@ public class ImageStitcher {
     private final int numberOfThreads;
     private final ImageServer<BufferedImage> server;
     private final AtomicBoolean someInputImagesNotUsed = new AtomicBoolean(false);
+    /**
+     * Indicate how the input images were generated.
+     */
+    public enum ImageSource {
+        /**
+         * Images were generated with the Vectra 2 imaging system
+         */
+        VECTRA_2("Vectra 2"),
+        /**
+         * Images were generated with the Vectra 3 imaging system
+         */
+        VECTRA_3("Vectra 3");
+
+        private final String name;
+
+        ImageSource(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
 
     private ImageStitcher(Builder builder) throws InterruptedException, IOException {
         logger.debug("Creating image stitcher for {}", builder.imagePaths);
@@ -68,8 +93,10 @@ public class ImageStitcher {
 
                     List<ImageRegion> regions = TiffRegionParser.parseRegion(
                             imagePath,
+                            builder.imageSource,
                             server.getMetadata().getSizeZ(),
-                            server.getMetadata().getSizeT()
+                            server.getMetadata().getSizeT(),
+                            server.getMetadata().getPixelCalibration()
                     );
                     logger.debug("Got regions {} for {}", regions, imagePath);
 
@@ -193,6 +220,7 @@ public class ImageStitcher {
     public static class Builder {
 
         private final List<String> imagePaths;
+        private ImageSource imageSource = ImageSource.VECTRA_3;
         private int numberOfThreads = Runtime.getRuntime().availableProcessors();   // this was determined by running the BenchmarkImageStitching
                                                                                     // benchmark on several machines and taking a good score that
                                                                                     // doesn't require a lot of RAM
@@ -209,12 +237,23 @@ public class ImageStitcher {
         }
 
         /**
+         * Set how input images were generated.
+         *
+         * @param imageSource how input images were generated. {@link ImageSource#VECTRA_3} by default
+         * @return this builder
+         */
+        public Builder imageSource(ImageSource imageSource) {
+            this.imageSource = imageSource;
+            return this;
+        }
+
+        /**
          * Set the number of threads to use when parsing the input images or writing the output image.
          *
          * @param numberOfThreads the number of threads to use. By default, this is equal to {@link Runtime#availableProcessors()}
          * @return this builder
          */
-        public Builder setNumberOfThreads(int numberOfThreads) {
+        public Builder numberOfThreads(int numberOfThreads) {
             this.numberOfThreads = numberOfThreads;
             return this;
         }
@@ -242,7 +281,7 @@ public class ImageStitcher {
          * @param onProgress a function that will be called at different steps when {@link #build()} is called
          * @return this builder
          */
-        public Builder setOnProgress(Consumer<Float> onProgress) {
+        public Builder onProgress(Consumer<Float> onProgress) {
             this.onProgress = onProgress;
             return this;
         }
@@ -258,7 +297,7 @@ public class ImageStitcher {
          * @throws IOException if an issue occurs while creating the output image
          * @throws InterruptedException if this operation in interrupted
          * @throws IllegalArgumentException if no image was given to {@link #Builder(List)}, or if this list doesn't
-         * contain any TIFF images that have the tags described in {@link TiffRegionParser#parseRegion(String,int,int)}
+         * contain any TIFF images that have the tags described in {@link TiffRegionParser#parseRegion(String, ImageSource, int, int, PixelCalibration)}
          */
         public ImageStitcher build() throws IOException, InterruptedException {
             return new ImageStitcher(this);

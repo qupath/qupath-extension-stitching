@@ -143,6 +143,13 @@ class StitchingAction implements Runnable {
                         ImageFormat.OME_ZARR,
                         List.of(ImageFormat.values()),
                         resources.getString("StitchingAction.imageFormatDescription")
+                )
+                .addChoiceParameter(
+                        "imageSource",
+                        resources.getString("StitchingAction.imageSource"),
+                        ImageStitcher.ImageSource.VECTRA_3,
+                        List.of(ImageStitcher.ImageSource.values()),
+                        resources.getString("StitchingAction.imageSourceDescription")
                 );
     }
 
@@ -166,9 +173,10 @@ class StitchingAction implements Runnable {
             try {
                 Platform.runLater(() -> progressWindow.setStatus(resources.getString("StitchingAction.parsingInputImages")));
                 ImageStitcher imageStitcher = new ImageStitcher.Builder(inputImages)
-                        .setNumberOfThreads(parameters.getIntParameterValue("numberOfThreads"))
+                        .imageSource((ImageStitcher.ImageSource) parameters.getChoiceParameterValue("imageSource"))
+                        .numberOfThreads(parameters.getIntParameterValue("numberOfThreads"))
                         .pyramidalize(parameters.getBooleanParameterValue("pyramidalize"))
-                        .setOnProgress(progress -> Platform.runLater(() -> progressWindow.setProgress(switch (imageFormat) {
+                        .onProgress(progress -> Platform.runLater(() -> progressWindow.setProgress(switch (imageFormat) {
                             case OME_ZARR -> progress / 2;
                             case OME_TIFF -> progress;
                         })))

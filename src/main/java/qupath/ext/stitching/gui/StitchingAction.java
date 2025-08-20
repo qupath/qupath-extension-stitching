@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qupath.ext.stitching.Utils;
 import qupath.ext.stitching.core.ImageStitcher;
+import qupath.ext.stitching.core.positionfinders.PathPositionFinder;
+import qupath.ext.stitching.core.positionfinders.TiffTagPositionFinder;
 import qupath.fx.dialogs.Dialogs;
 import qupath.fx.dialogs.FileChoosers;
 import qupath.lib.common.ThreadTools;
@@ -36,6 +38,21 @@ class StitchingAction implements Runnable {
         private final String name;
 
         ImageFormat(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+    private enum TilePosition {
+        TIFF_TAG(resources.getString("StitchingAction.tiffTags")),
+        IMAGE_PATH(resources.getString("StitchingAction.imagePath"));
+
+        private final String name;
+
+        TilePosition(String name) {
             this.name = name;
         }
 
@@ -145,11 +162,11 @@ class StitchingAction implements Runnable {
                         resources.getString("StitchingAction.imageFormatDescription")
                 )
                 .addChoiceParameter(
-                        "imageSource",
-                        resources.getString("StitchingAction.imageSource"),
-                        ImageStitcher.ImageSource.VECTRA_3,
-                        List.of(ImageStitcher.ImageSource.values()),
-                        resources.getString("StitchingAction.imageSourceDescription")
+                        "tilePosition",
+                        resources.getString("StitchingAction.tilePosition"),
+                        TilePosition.TIFF_TAG,
+                        List.of(TilePosition.values()),
+                        resources.getString("StitchingAction.tilePositionDescription")
                 );
     }
 
@@ -173,7 +190,10 @@ class StitchingAction implements Runnable {
             try {
                 Platform.runLater(() -> progressWindow.setStatus(resources.getString("StitchingAction.parsingInputImages")));
                 ImageStitcher imageStitcher = new ImageStitcher.Builder(inputImages)
-                        .imageSource((ImageStitcher.ImageSource) parameters.getChoiceParameterValue("imageSource"))
+                        .positionFinder(switch ((TilePosition) parameters.getChoiceParameterValue("tilePosition")) {
+                            case IMAGE_PATH -> new PathPositionFinder();
+                            case TIFF_TAG -> new TiffTagPositionFinder();
+                        })
                         .numberOfThreads(parameters.getIntParameterValue("numberOfThreads"))
                         .pyramidalize(parameters.getBooleanParameterValue("pyramidalize"))
                         .onProgress(progress -> Platform.runLater(() -> progressWindow.setProgress(switch (imageFormat) {

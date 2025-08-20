@@ -2,12 +2,13 @@ package qupath.ext.stitching.core;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qupath.ext.stitching.core.positionfinders.PositionFinder;
+import qupath.ext.stitching.core.positionfinders.TiffTagPositionFinder;
 import qupath.lib.common.ThreadTools;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.images.servers.ImageServerBuilder;
 import qupath.lib.images.servers.ImageServerProvider;
 import qupath.lib.images.servers.ImageServers;
-import qupath.lib.images.servers.PixelCalibration;
 import qupath.lib.images.servers.SparseImageServer;
 import qupath.lib.images.writers.ome.OMEPyramidWriter;
 import qupath.lib.images.writers.ome.zarr.OMEZarrWriter;
@@ -17,6 +18,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -25,9 +27,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 /**
- * A class to stitch TIFF images based on tags described in {@link TiffRegionParser#parseRegion(String, ImageSource, int, int, PixelCalibration)}.
+ * A class to stitch TIFF images.
  * <p>
  * Use a {@link Builder} to create an instance of this class.
  */
@@ -37,30 +40,6 @@ public class ImageStitcher {
     private final int numberOfThreads;
     private final ImageServer<BufferedImage> server;
     private final AtomicBoolean someInputImagesNotUsed = new AtomicBoolean(false);
-    /**
-     * Indicate how the input images were generated.
-     */
-    public enum ImageSource {
-        /**
-         * Images were generated with the Vectra 2 imaging system
-         */
-        VECTRA_2("Vectra 2"),
-        /**
-         * Images were generated with the Vectra 3 imaging system
-         */
-        VECTRA_3("Vectra 3");
-
-        private final String name;
-
-        ImageSource(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String toString() {
-            return name;
-        }
-    }
 
     private ImageStitcher(Builder builder) throws InterruptedException, IOException {
         logger.debug("Creating image stitcher for {}", builder.imagePaths);
@@ -79,6 +58,9 @@ public class ImageStitcher {
         for (String imagePath: builder.imagePaths) {
             executorService.execute(() -> {
                 try {
+                    logger.debug("Checking if {} is a TIFF file", imagePath);
+                    TiffFileChecker.checkTiffFile(imagePath);
+
                     logger.debug("Parsing {}...", imagePath);
                     ImageServerBuilder.UriImageSupport<BufferedImage> imageSupport = ImageServerProvider.getPreferredUriImageSupport(BufferedImage.class, imagePath);
                     if (imageSupport == null || imageSupport.getBuilders().isEmpty()) {
@@ -91,13 +73,19 @@ public class ImageStitcher {
                     ImageServer<BufferedImage> server = serverBuilder.build();
                     logger.debug("Got server {} for {}", server, imagePath);
 
-                    List<ImageRegion> regions = TiffRegionParser.parseRegion(
-                            imagePath,
-                            builder.imageSource,
-                            server.getMetadata().getSizeZ(),
-                            server.getMetadata().getSizeT(),
-                            server.getMetadata().getPixelCalibration()
-                    );
+                    int[] position = builder.positionFinder.findPosition(server);
+                    List<ImageRegion> regions = IntStream.range(0, server.getMetadata().getSizeZ())
+                            .boxed()
+                            .flatMap(z -> IntStream.range(0, server.getMetadata().getSizeT())
+                                    .mapToObj(t -> ImageRegion.createInstance(
+                                            position[0],
+                                            position[1],
+                                            server.getMetadata().getWidth(),
+                                            server.getMetadata().getHeight(),
+                                            z,
+                                            t
+                                    ))
+                            ).toList();
                     logger.debug("Got regions {} for {}", regions, imagePath);
 
                     synchronized (this) {
@@ -220,7 +208,7 @@ public class ImageStitcher {
     public static class Builder {
 
         private final List<String> imagePaths;
-        private ImageSource imageSource = ImageSource.VECTRA_3;
+        private PositionFinder positionFinder = new TiffTagPositionFinder();
         private int numberOfThreads = Runtime.getRuntime().availableProcessors();   // this was determined by running the BenchmarkImageStitching
                                                                                     // benchmark on several machines and taking a good score that
                                                                                     // doesn't require a lot of RAM
@@ -231,19 +219,22 @@ public class ImageStitcher {
          * Create the builder.
          *
          * @param imagePaths paths of the TIFF files that should be combined
+         * @throws NullPointerException if the provided parameter is null
          */
         public Builder(List<String> imagePaths) {
-            this.imagePaths = imagePaths;
+            this.imagePaths = Objects.requireNonNull(imagePaths);
         }
 
         /**
-         * Set how input images were generated.
+         * Set the strategy to retrieve tile positions. Take a look at the {@link qupath.ext.stitching.core.positionfinders}
+         * package for existing implementations. {@link TiffTagPositionFinder} by default.
          *
-         * @param imageSource how input images were generated. {@link ImageSource#VECTRA_3} by default
+         * @param positionFinder the strategy to retrieve tile positions
          * @return this builder
+         * @throws NullPointerException if the provided parameter is null
          */
-        public Builder imageSource(ImageSource imageSource) {
-            this.imageSource = imageSource;
+        public Builder positionFinder(PositionFinder positionFinder) {
+            this.positionFinder = Objects.requireNonNull(positionFinder);
             return this;
         }
 
@@ -278,7 +269,7 @@ public class ImageStitcher {
          * <p>
          * This function may be called from any thread.
          *
-         * @param onProgress a function that will be called at different steps when {@link #build()} is called
+         * @param onProgress a function that will be called at different steps when {@link #build()} is called. Can be null
          * @return this builder
          */
         public Builder onProgress(Consumer<Float> onProgress) {
@@ -296,8 +287,8 @@ public class ImageStitcher {
          * @return this builder
          * @throws IOException if an issue occurs while creating the output image
          * @throws InterruptedException if this operation in interrupted
-         * @throws IllegalArgumentException if no image was given to {@link #Builder(List)}, or if this list doesn't
-         * contain any TIFF images that have the tags described in {@link TiffRegionParser#parseRegion(String, ImageSource, int, int, PixelCalibration)}
+         * @throws IllegalArgumentException if no image was given to {@link #Builder(List)}, or if it wasn't possible to
+         * retrieve any position from the list
          */
         public ImageStitcher build() throws IOException, InterruptedException {
             return new ImageStitcher(this);

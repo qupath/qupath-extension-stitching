@@ -1,17 +1,20 @@
 package qupath.ext.stitching.gui;
 
 import javafx.application.Platform;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qupath.ext.stitching.Utils;
 import qupath.ext.stitching.core.ImageStitcher;
-import qupath.ext.stitching.core.positionfinders.PathPositionFinder;
+import qupath.ext.stitching.core.positionfinders.FilenamePatternPositionFinder;
 import qupath.ext.stitching.core.positionfinders.TiffTagPositionFinder;
 import qupath.fx.dialogs.Dialogs;
 import qupath.fx.dialogs.FileChoosers;
 import qupath.lib.common.ThreadTools;
 import qupath.lib.gui.QuPathGUI;
-import qupath.lib.gui.tools.GuiTools;
+import qupath.lib.gui.dialogs.ParameterPanelFX;
 import qupath.lib.plugins.parameters.ParameterList;
 
 import java.io.File;
@@ -47,6 +50,7 @@ class StitchingAction implements Runnable {
         }
     }
     private enum TilePosition {
+        ALL(resources.getString("StitchingAction.all")),
         TIFF_TAG(resources.getString("StitchingAction.tiffTags")),
         IMAGE_PATH(resources.getString("StitchingAction.imagePath"));
 
@@ -76,7 +80,7 @@ class StitchingAction implements Runnable {
         logger.debug("Stitching action called for {}", quPath);
 
         ParameterList parameters = createParameterList();
-        if (!GuiTools.showParameterDialog(resources.getString("StitchingAction.title"), parameters)) {
+        if (!createAndShowDialog(parameters)) {
             return;
         }
         logger.debug("Got parameters {} for stitching", parameters);
@@ -164,10 +168,23 @@ class StitchingAction implements Runnable {
                 .addChoiceParameter(
                         "tilePosition",
                         resources.getString("StitchingAction.tilePosition"),
-                        TilePosition.TIFF_TAG,
+                        TilePosition.ALL,
                         List.of(TilePosition.values()),
                         resources.getString("StitchingAction.tilePositionDescription")
                 );
+    }
+
+    private static boolean createAndShowDialog(ParameterList parameters) {
+        ButtonType continueButton = new ButtonType(resources.getString("StitchingAction.chooseImages"), ButtonBar.ButtonData.OK_DONE);
+
+        return new Dialogs.Builder()
+                .alertType(Alert.AlertType.CONFIRMATION)
+                .buttons(continueButton, ButtonType.CANCEL)
+                .title(resources.getString("StitchingAction.title"))
+                .content(new ParameterPanelFX(parameters).getPane())
+                .resizable()
+                .showAndWait()
+                .orElse(ButtonType.CANCEL) == continueButton;
     }
 
     private void stitchImages(List<String> inputImages, String outputImage, ParameterList parameters, ImageFormat imageFormat) {
@@ -191,8 +208,12 @@ class StitchingAction implements Runnable {
                 Platform.runLater(() -> progressWindow.setStatus(resources.getString("StitchingAction.parsingInputImages")));
                 ImageStitcher imageStitcher = new ImageStitcher.Builder(inputImages)
                         .positionFinder(switch ((TilePosition) parameters.getChoiceParameterValue("tilePosition")) {
-                            case IMAGE_PATH -> new PathPositionFinder();
-                            case TIFF_TAG -> new TiffTagPositionFinder();
+                            case ALL -> List.of(
+                                    new FilenamePatternPositionFinder(FilenamePatternPositionFinder.StandardPattern.VECTRA),
+                                    new TiffTagPositionFinder()
+                            );
+                            case IMAGE_PATH -> List.of(new FilenamePatternPositionFinder(FilenamePatternPositionFinder.StandardPattern.VECTRA));
+                            case TIFF_TAG -> List.of(new TiffTagPositionFinder());
                         })
                         .numberOfThreads(parameters.getIntParameterValue("numberOfThreads"))
                         .pyramidalize(parameters.getBooleanParameterValue("pyramidalize"))

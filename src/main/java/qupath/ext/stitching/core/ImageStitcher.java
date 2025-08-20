@@ -2,6 +2,7 @@ package qupath.ext.stitching.core;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qupath.ext.stitching.core.positionfinders.FilenamePatternPositionFinder;
 import qupath.ext.stitching.core.positionfinders.PositionFinder;
 import qupath.ext.stitching.core.positionfinders.TiffTagPositionFinder;
 import qupath.lib.common.ThreadTools;
@@ -73,13 +74,29 @@ public class ImageStitcher {
                     ImageServer<BufferedImage> server = serverBuilder.build();
                     logger.debug("Got server {} for {}", server, imagePath);
 
-                    int[] position = builder.positionFinder.findPosition(server);
+                    int[] position = null;
+                    for (int i=0; i<builder.positionFinders.size(); i++) {
+                        try {
+                            position = builder.positionFinders.get(i).findPosition(server);
+                        } catch (IOException | RuntimeException e) {
+                            if (i < builder.positionFinders.size() - 1) {
+                                logger.debug("Cannot use {} to retrieve position. Trying following one", builder.positionFinders.get(i), e);
+                            } else {
+                                throw e;
+                            }
+                        }
+                    }
+                    if (position == null) {
+                        throw new IllegalStateException("No position finder was able to work");
+                    }
+                    int[] finalPosition = position;
+
                     List<ImageRegion> regions = IntStream.range(0, server.getMetadata().getSizeZ())
                             .boxed()
                             .flatMap(z -> IntStream.range(0, server.getMetadata().getSizeT())
                                     .mapToObj(t -> ImageRegion.createInstance(
-                                            position[0],
-                                            position[1],
+                                            finalPosition[0],
+                                            finalPosition[1],
                                             server.getMetadata().getWidth(),
                                             server.getMetadata().getHeight(),
                                             z,
@@ -208,7 +225,10 @@ public class ImageStitcher {
     public static class Builder {
 
         private final List<String> imagePaths;
-        private PositionFinder positionFinder = new TiffTagPositionFinder();
+        private List<PositionFinder> positionFinders = List.of(
+                new FilenamePatternPositionFinder(FilenamePatternPositionFinder.StandardPattern.VECTRA),
+                new TiffTagPositionFinder()
+        );
         private int numberOfThreads = Runtime.getRuntime().availableProcessors();   // this was determined by running the BenchmarkImageStitching
                                                                                     // benchmark on several machines and taking a good score that
                                                                                     // doesn't require a lot of RAM
@@ -226,15 +246,24 @@ public class ImageStitcher {
         }
 
         /**
-         * Set the strategy to retrieve tile positions. Take a look at the {@link qupath.ext.stitching.core.positionfinders}
-         * package for existing implementations. {@link TiffTagPositionFinder} by default.
+         * Set the strategies to retrieve tile positions. For each tile, the first position finder that doesn't throw an exception
+         * is used (following the order of the provided list).
+         * <p>
+         * Take a look at the {@link qupath.ext.stitching.core.positionfinders} package for existing implementations.
+         * {@link FilenamePatternPositionFinder} with {@link FilenamePatternPositionFinder.StandardPattern#VECTRA} and
+         * {@link TiffTagPositionFinder} by default.
          *
-         * @param positionFinder the strategy to retrieve tile positions
+         * @param positionFinders a list of strategies to retrieve tile positions
          * @return this builder
          * @throws NullPointerException if the provided parameter is null
+         * @throws IllegalArgumentException if the provided list is empty
          */
-        public Builder positionFinder(PositionFinder positionFinder) {
-            this.positionFinder = Objects.requireNonNull(positionFinder);
+        public Builder positionFinder(List<PositionFinder> positionFinders) {
+            if (positionFinders.isEmpty()) {
+                throw new IllegalArgumentException("The provided list of position finders is empty");
+            }
+
+            this.positionFinders = Objects.requireNonNull(positionFinders);
             return this;
         }
 

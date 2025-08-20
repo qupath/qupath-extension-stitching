@@ -7,6 +7,7 @@ import java.io.IOException;
 /**
  * A class that can find a tile position within an image server.
  */
+@FunctionalInterface
 public interface PositionFinder {
 
     /**

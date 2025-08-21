@@ -2,10 +2,8 @@
 
 Welcome to the stitching extension for [QuPath](http://qupath.github.io)!
 
-This extension adds support for combining TIFF images based on their "XResolution", "XPosition", "YResolution", "YPosition", "ImageWidth", and "ImageLength" tags.
-
-The extension is intended for QuPath v0.6 and later.
-It is not compatible with earlier QuPath versions.
+This extension supports stitching individual fields of view into a larger image.
+This includes Vectra images where the position information is encoded in the file name or TIFF tags.
 
 ## Installing
 
@@ -18,7 +16,8 @@ The extension will then be copied to a location inside that directory.
 
 You might then need to restart QuPath (but not your computer).
 
-You can then stitch images in QuPath by clicking on `Extensions` -> `Stitch images`.
+You can then stitch images in QuPath by clicking on `Extensions` -> `Stitch images`. The default parameters should be sufficient to stitch Vectra images.
+
 Additionally, you can use the extension in a script (see the `sample-scripts` folder of this repository).
 
 ## Building

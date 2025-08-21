@@ -1,7 +1,6 @@
 package qupath.ext.stitching.core;
 
 import org.junit.jupiter.api.Assertions;
-import org.opentest4j.AssertionFailedError;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -18,7 +17,6 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 
 /**
  * A collection of utility methods for creating (TIFF) images.
@@ -128,33 +126,5 @@ public class ImageUtils {
         );
 
         Assertions.assertArrayEquals(expectedPixels, actualPixels);
-    }
-
-    /**
-     * Assert that two lists are equal without taking the order
-     * of elements into account.
-     * This function doesn't work if some duplicates are present in one
-     * of the list.
-     *
-     * @param expectedCollection the expected values
-     * @param actualCollection the actual values
-     * @param <T> the type of the elements of the collection
-     */
-    public static <T> void assertCollectionsEqualsWithoutOrder(Collection<? extends T> expectedCollection, Collection<? extends T> actualCollection) {
-        if (expectedCollection.size() != actualCollection.size()) {
-            throw new AssertionFailedError(String.format(
-                    "Expected collection size: %d but was: %d",
-                    expectedCollection.size(),
-                    actualCollection.size())
-            );
-        }
-
-        if (!expectedCollection.containsAll(actualCollection) || !actualCollection.containsAll(expectedCollection)) {
-            throw new AssertionFailedError(String.format(
-                    "Expected collection: %s but was: %s",
-                    expectedCollection,
-                    actualCollection
-            ));
-        }
     }
 }

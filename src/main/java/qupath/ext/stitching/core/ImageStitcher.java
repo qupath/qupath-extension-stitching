@@ -2,6 +2,9 @@ package qupath.ext.stitching.core;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qupath.ext.stitching.core.positionfinders.FilenamePatternPositionFinder;
+import qupath.ext.stitching.core.positionfinders.PositionFinder;
+import qupath.ext.stitching.core.positionfinders.TiffTagPositionFinder;
 import qupath.lib.common.ThreadTools;
 import qupath.lib.images.servers.ImageServer;
 import qupath.lib.images.servers.ImageServerBuilder;
@@ -16,6 +19,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,9 +28,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 /**
- * A class to stitch TIFF images based on tags described in {@link TiffRegionParser#parseRegion(String,int,int)}.
+ * A class to stitch TIFF images.
  * <p>
  * Use a {@link Builder} to create an instance of this class.
  */
@@ -54,6 +59,9 @@ public class ImageStitcher {
         for (String imagePath: builder.imagePaths) {
             executorService.execute(() -> {
                 try {
+                    logger.debug("Checking if {} is a TIFF file", imagePath);
+                    TiffFileChecker.checkTiffFile(imagePath);
+
                     logger.debug("Parsing {}...", imagePath);
                     ImageServerBuilder.UriImageSupport<BufferedImage> imageSupport = ImageServerProvider.getPreferredUriImageSupport(BufferedImage.class, imagePath);
                     if (imageSupport == null || imageSupport.getBuilders().isEmpty()) {
@@ -66,11 +74,35 @@ public class ImageStitcher {
                     ImageServer<BufferedImage> server = serverBuilder.build();
                     logger.debug("Got server {} for {}", server, imagePath);
 
-                    List<ImageRegion> regions = TiffRegionParser.parseRegion(
-                            imagePath,
-                            server.getMetadata().getSizeZ(),
-                            server.getMetadata().getSizeT()
-                    );
+                    int[] position = null;
+                    for (int i=0; i<builder.positionFinders.size(); i++) {
+                        try {
+                            position = builder.positionFinders.get(i).findPosition(server);
+                        } catch (IOException | RuntimeException e) {
+                            if (i < builder.positionFinders.size() - 1) {
+                                logger.debug("Cannot use {} to retrieve position. Trying following one", builder.positionFinders.get(i), e);
+                            } else {
+                                throw e;
+                            }
+                        }
+                    }
+                    if (position == null) {
+                        throw new IllegalStateException("No position finder was able to work");
+                    }
+                    int[] finalPosition = position;
+
+                    List<ImageRegion> regions = IntStream.range(0, server.getMetadata().getSizeZ())
+                            .boxed()
+                            .flatMap(z -> IntStream.range(0, server.getMetadata().getSizeT())
+                                    .mapToObj(t -> ImageRegion.createInstance(
+                                            finalPosition[0],
+                                            finalPosition[1],
+                                            server.getMetadata().getWidth(),
+                                            server.getMetadata().getHeight(),
+                                            z,
+                                            t
+                                    ))
+                            ).toList();
                     logger.debug("Got regions {} for {}", regions, imagePath);
 
                     synchronized (this) {
@@ -193,6 +225,10 @@ public class ImageStitcher {
     public static class Builder {
 
         private final List<String> imagePaths;
+        private List<PositionFinder> positionFinders = List.of(
+                new FilenamePatternPositionFinder(FilenamePatternPositionFinder.StandardPattern.VECTRA),
+                new TiffTagPositionFinder()
+        );
         private int numberOfThreads = Runtime.getRuntime().availableProcessors();   // this was determined by running the BenchmarkImageStitching
                                                                                     // benchmark on several machines and taking a good score that
                                                                                     // doesn't require a lot of RAM
@@ -203,9 +239,32 @@ public class ImageStitcher {
          * Create the builder.
          *
          * @param imagePaths paths of the TIFF files that should be combined
+         * @throws NullPointerException if the provided parameter is null
          */
         public Builder(List<String> imagePaths) {
-            this.imagePaths = imagePaths;
+            this.imagePaths = Objects.requireNonNull(imagePaths);
+        }
+
+        /**
+         * Set the strategies to retrieve tile positions. For each tile, the first position finder that doesn't throw an exception
+         * is used (following the order of the provided list).
+         * <p>
+         * Take a look at the {@link qupath.ext.stitching.core.positionfinders} package for existing implementations.
+         * {@link FilenamePatternPositionFinder} with {@link FilenamePatternPositionFinder.StandardPattern#VECTRA} and
+         * {@link TiffTagPositionFinder} by default.
+         *
+         * @param positionFinders a list of strategies to retrieve tile positions
+         * @return this builder
+         * @throws NullPointerException if the provided parameter is null
+         * @throws IllegalArgumentException if the provided list is empty
+         */
+        public Builder positionFinders(List<PositionFinder> positionFinders) {
+            if (positionFinders.isEmpty()) {
+                throw new IllegalArgumentException("The provided list of position finders is empty");
+            }
+
+            this.positionFinders = Objects.requireNonNull(positionFinders);
+            return this;
         }
 
         /**
@@ -214,7 +273,7 @@ public class ImageStitcher {
          * @param numberOfThreads the number of threads to use. By default, this is equal to {@link Runtime#availableProcessors()}
          * @return this builder
          */
-        public Builder setNumberOfThreads(int numberOfThreads) {
+        public Builder numberOfThreads(int numberOfThreads) {
             this.numberOfThreads = numberOfThreads;
             return this;
         }
@@ -239,10 +298,10 @@ public class ImageStitcher {
          * <p>
          * This function may be called from any thread.
          *
-         * @param onProgress a function that will be called at different steps when {@link #build()} is called
+         * @param onProgress a function that will be called at different steps when {@link #build()} is called. Can be null
          * @return this builder
          */
-        public Builder setOnProgress(Consumer<Float> onProgress) {
+        public Builder onProgress(Consumer<Float> onProgress) {
             this.onProgress = onProgress;
             return this;
         }
@@ -257,8 +316,8 @@ public class ImageStitcher {
          * @return this builder
          * @throws IOException if an issue occurs while creating the output image
          * @throws InterruptedException if this operation in interrupted
-         * @throws IllegalArgumentException if no image was given to {@link #Builder(List)}, or if this list doesn't
-         * contain any TIFF images that have the tags described in {@link TiffRegionParser#parseRegion(String,int,int)}
+         * @throws IllegalArgumentException if no image was given to {@link #Builder(List)}, or if it wasn't possible to
+         * retrieve any position from the list
          */
         public ImageStitcher build() throws IOException, InterruptedException {
             return new ImageStitcher(this);

@@ -4,8 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qupath.lib.common.GeneralTools;
 
-import javax.swing.SwingUtilities;
-import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -46,42 +44,8 @@ public class Utils {
             return;
         }
 
-        if (!moveToTrash(fileOrDirectoryToDelete)) {
+        if (!GeneralTools.moveToTrash(fileOrDirectoryToDelete)) {
             deleteFileOrDirectoryRecursively(fileOrDirectoryToDelete);
-        }
-    }
-
-    //TODO: remove those two functions and use GeneralTools.moveToTrash() when switching to QuPath 0.7
-    private static boolean moveToTrash(File fileOrDirectory) {
-        if (Desktop.isDesktopSupported()) {
-            try {
-                var desktop = Desktop.getDesktop();
-                return desktop.isSupported(Desktop.Action.MOVE_TO_TRASH) && moveToTrash(desktop, fileOrDirectory);
-            } catch (UnsupportedOperationException e) {
-                logger.warn("Cannot move {} to trash", fileOrDirectory, e);
-                return false;
-            }
-        } else {
-            logger.warn("Desktop class not supported. Cannot move {} to trash", fileOrDirectory);
-            return false;
-        }
-    }
-    private static boolean moveToTrash(Desktop desktop, File fileOrDirectory) {
-        if (SwingUtilities.isEventDispatchThread() || !GeneralTools.isWindows()) {
-            // It seems safe to call move to trash from any thread on macOS and Linux
-            // We can't use the EDT on macOS because of https://bugs.openjdk.org/browse/JDK-8087465
-            return desktop.moveToTrash(fileOrDirectory);
-        } else {
-            // EXCEPTION_ACCESS_VIOLATION associated with moveToTrash reported on Windows 11.
-            // https://github.com/qupath/qupath/issues/1738
-            // Could not be replicated (but we didn't have Windows 11...); taking a guess that this might help.
-            try {
-                SwingUtilities.invokeAndWait(() -> moveToTrash(desktop, fileOrDirectory));
-            } catch (Exception e) {
-                logger.error("Exception moving file to trash: {}", e.getMessage(), e);
-                return false;
-            }
-            return !fileOrDirectory.exists();
         }
     }
 

@@ -258,7 +258,7 @@ public class ImageStitcher {
          * @throws NullPointerException if the provided parameter is null
          * @throws IllegalArgumentException if the provided list is empty
          */
-        public Builder positionFinder(List<PositionFinder> positionFinders) {
+        public Builder positionFinders(List<PositionFinder> positionFinders) {
             if (positionFinders.isEmpty()) {
                 throw new IllegalArgumentException("The provided list of position finders is empty");
             }

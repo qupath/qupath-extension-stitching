@@ -1,5 +1,6 @@
 import qupath.ext.stitching.core.ImageStitcher
-import qupath.ext.stitching.core.positionfinders.*
+import qupath.ext.stitching.core.positionfinders.TiffTagPositionFinder
+import qupath.ext.stitching.core.positionfinders.FilenamePatternPositionFinder
 
 /*
  * This script will stitch input images and write the result to an output OME-Zarr image.
@@ -11,12 +12,15 @@ var inputImages = [
         // other images...
 ]
 var outputImage = "/path/to/the/output/image.ome.zarr"          // the path must ends with ".ome.zarr" and must not already exist
-var positionFinder = new TiffTagPositionFinder()                   // where to find each tile position. TiffTagPositionFinder looks at the TIFF tags of the image. Can also be new PathPositionFinder() to look at the image name
+var positionFinders = [
+        new FilenamePatternPositionFinder(FilenamePatternPositionFinder.StandardPattern.VECTRA),
+        new TiffTagPositionFinder()
+]     // a list of strategies for where to find each tile position. FilenamePatternPositionFinder looks at the image name, while TiffTagPositionFinder looks at the TIFF tags of the image
 var numberOfThreads = Runtime.getRuntime().availableProcessors()  // the number of threads to use when reading and writing files
 var pyramidalize = true                                       // whether to create a pyramidal image
 
 new ImageStitcher.Builder(inputImages)
-    .positionFinder(positionFinder)
+    .positionFinders(positionFinders)
     .numberOfThreads(numberOfThreads)
     .pyramidalize(pyramidalize)
     .build()

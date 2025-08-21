@@ -207,7 +207,7 @@ class StitchingAction implements Runnable {
             try {
                 Platform.runLater(() -> progressWindow.setStatus(resources.getString("StitchingAction.parsingInputImages")));
                 ImageStitcher imageStitcher = new ImageStitcher.Builder(inputImages)
-                        .positionFinder(switch ((TilePosition) parameters.getChoiceParameterValue("tilePosition")) {
+                        .positionFinders(switch ((TilePosition) parameters.getChoiceParameterValue("tilePosition")) {
                             case ALL -> List.of(
                                     new FilenamePatternPositionFinder(FilenamePatternPositionFinder.StandardPattern.VECTRA),
                                     new TiffTagPositionFinder()

@@ -78,6 +78,7 @@ public class ImageStitcher {
                     for (int i=0; i<builder.positionFinders.size(); i++) {
                         try {
                             position = builder.positionFinders.get(i).findPosition(server);
+                            break;
                         } catch (IOException | RuntimeException e) {
                             if (i < builder.positionFinders.size() - 1) {
                                 logger.debug("Cannot use {} to retrieve position. Trying following one", builder.positionFinders.get(i), e);

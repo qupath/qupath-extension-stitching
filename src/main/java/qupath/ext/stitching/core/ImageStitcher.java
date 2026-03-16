@@ -17,10 +17,10 @@ import qupath.lib.regions.ImageRegion;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -172,27 +172,25 @@ public class ImageStitcher {
     public void writeToZarrFile(String outputPath, Consumer<Float> onProgress) throws IOException, InterruptedException {
         logger.debug("Attempting to write {} to {}", server, outputPath);
         AtomicReference<Float> progress = new AtomicReference<>(0f);
-        Map<Integer, Float> levelProgress = new ConcurrentHashMap<>();      // Lower resolution tiles take more time to read, so we assume that a
-                                                                            // processed lower resolution tile provides more progress than a processed
-                                                                            // higher resolution tile
-        try (var writer = new OMEZarrWriter.Builder(server)
-                .parallelize(numberOfThreads)
-                .onTileWritten(onProgress == null ?
-                        null :
-                        tileRequest -> onProgress.accept(progress.updateAndGet(p -> p + levelProgress.get(tileRequest.getLevel())))
-                )
-                .build(outputPath)
-        ) {
-            for (int level=0; level<writer.getReaderServer().getMetadata().nLevels(); level++) {
-                levelProgress.put(
-                        level,
-                        1f / (writer.getReaderServer().getMetadata().nLevels() * writer.getReaderServer().getTileRequestManager().getTileRequestsForLevel(level).size())
-                );
-            }
-            logger.debug("{} tiles to write to {}", writer.getReaderServer().getTileRequestManager().getAllTileRequests().size(), outputPath);
-
-            writer.writeImage();
+        Map<Integer, Float> levelProgress = new HashMap<>();        // Lower resolution tiles take more time to read, so we assume that a
+                                                                    // processed lower resolution tile provides more progress than a processed
+                                                                    // higher resolution tile
+        OMEZarrWriter.Builder builder = new OMEZarrWriter.Builder(server)
+                .parallelize(numberOfThreads);
+        if (onProgress != null) {
+            builder.onTileWritten(tileRequest -> onProgress.accept(progress.updateAndGet(p -> p + levelProgress.get(tileRequest.getLevel()))));
         }
+        OMEZarrWriter writer = builder.build(outputPath);
+
+        for (int level=0; level<writer.getReaderServer().getMetadata().nLevels(); level++) {
+            levelProgress.put(
+                    level,
+                    1f / (writer.getReaderServer().getMetadata().nLevels() * writer.getReaderServer().getTileRequestManager().getTileRequestsForLevel(level).size())
+            );
+        }
+        logger.debug("{} tiles to write to {}", writer.getReaderServer().getTileRequestManager().getAllTileRequests().size(), outputPath);
+
+        writer.writeImage();
     }
 
     /**
